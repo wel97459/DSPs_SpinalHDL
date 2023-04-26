@@ -107,3 +107,81 @@ class CIC_Interpolation(DataWidth:Int=8, ChainLength:Int = 4, Ratio:Int=4,  Diff
 
     io.o_data := Integrators(ChainLength-1).io.o_data
 }
+
+class CIC_Interpolation_Test(DataWidthIn:Int=8, DataWidthOut:Int=8) extends Component
+{
+    val io = new Bundle {
+        val i_data = in SInt(DataWidthIn bits)
+        val o_data = out SInt(DataWidthOut bits)
+        val tone = in SInt(32 bits)
+        val sound_dac_p = out Bool()
+        val sound_dac_n = out Bool()
+    }
+
+    val dac = new Delta_Sigma_DAC()
+
+    val cic = new  CIC_Interpolation(DataWidthIn,4,8,2)
+    val downs = new Downsampler(DataWidthIn, 8)
+
+    downs.io.i_data := io.i_data.resize(DataWidthIn);
+    cic.io.i_div := downs.io.div
+    cic.io.i_data := downs.io.o_data
+    dac.io.dac_in := cic.io.o_data.resize(16).asBits
+
+    io.o_data := cic.io.o_data.resize(DataWidthOut)
+    io.sound_dac_p := dac.io.dac_out
+    io.sound_dac_n := !dac.io.dac_out
+}
+
+object CIC_Interpolation_sim {
+    def main(args: Array[String]) {
+        SimConfig.withFstWave.compile{
+            val dut = new CIC_Interpolation_Test(8,16)
+            dut
+        }.doSim { dut =>
+            //Fork a process to generate the reset and the clock on the dut
+            dut.clockDomain.forkStimulus(period = 10)
+            dut.io.i_data #= 0
+            var c = 0;
+            var cc = 0;
+            var t = 0.0
+            var s = 0.1
+            var ss = 0.1
+
+            var tone = 100000
+            dut.io.tone #= tone
+            val loop = new Breaks;
+            loop.breakable {
+                while (true) {
+                    dut.clockDomain.waitRisingEdge()
+
+                    t = c.toFloat / 25000000.0
+                    s = Math.sin((2 * Math.PI * tone.toFloat * t))*127
+
+                    // if(c % tone == 0){
+                    //     if(tone>1000){
+                    //         tone -= 1000
+                    //         dut.io.tone #= tone
+                    //     }
+                    // }
+
+                    // if(c > cc){
+                    //     if(s>0){
+                    //         s = -(1<<2)
+                    //     }else{
+                    //         s = (1<<2)
+                    //     }
+                    //     cc = c + (25000000/tone)
+                    // }
+
+                    dut.io.i_data #= (s).toInt
+  
+                    c += 1
+                    if(c > 99999){
+                        loop.break;
+                    }
+                }
+            }
+        }
+    }
+}
