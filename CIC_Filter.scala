@@ -36,7 +36,7 @@ class Integrator(idw:Int=8, odw:Int=9) extends Component
     io.o_data := data_out.resize(odw)
 }
 
-class Downsampler(dw:Int=8, r:Int=4) extends Component
+class DownSampler(dw:Int=8, r:Int=4) extends Component
 {
     val io = new Bundle {
         val i_data = in SInt(dw bits)
@@ -121,7 +121,7 @@ class CIC_Interpolation_Test(DataWidthIn:Int=8, DataWidthOut:Int=8) extends Comp
     val dac = new Delta_Sigma_DAC()
 
     val cic = new  CIC_Interpolation(DataWidthIn,4,8,2)
-    val downs = new Downsampler(DataWidthIn, 8)
+    val downs = new DownSampler(DataWidthIn, 8)
 
     downs.io.i_data := io.i_data.resize(DataWidthIn);
     cic.io.i_div := downs.io.div
