@@ -5,6 +5,7 @@ import spinal.core.sim._
 import scala.util.control.Breaks
 import scala.collection.mutable.ArrayBuffer
 
+
 class Comb(idw:Int=8, odw:Int=9, g:Int=1) extends Component
 {
     val io = new Bundle {
@@ -118,7 +119,7 @@ class CIC_Interpolation_Test(DataWidthIn:Int=8, DataWidthOut:Int=8) extends Comp
         val sound_dac_n = out Bool()
     }
 
-    val dac = new Delta_Sigma_DAC()
+    val dac = new Delta_Sigma_DAC_FOrder()
 
     val cic = new  CIC_Interpolation(DataWidthIn,4,8,2)
     val downs = new DownSampler(DataWidthIn, 8)
@@ -126,7 +127,7 @@ class CIC_Interpolation_Test(DataWidthIn:Int=8, DataWidthOut:Int=8) extends Comp
     downs.io.i_data := io.i_data.resize(DataWidthIn);
     cic.io.i_div := downs.io.div
     cic.io.i_data := downs.io.o_data
-    dac.io.dac_in := cic.io.o_data.resize(16).asBits
+    dac.io.dac_in := cic.io.o_data.resize(16).asUInt
 
     io.o_data := cic.io.o_data.resize(DataWidthOut)
     io.sound_dac_p := dac.io.dac_out
